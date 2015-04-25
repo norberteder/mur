@@ -32,12 +32,9 @@ namespace Mur
         {
             var now = DateTime.Now;
 
-            // TODO: find last run handing
-            var lastRun = DateTime.Now;
-
             // find jobr
-            var jobsSettingsToRun = JobSettings.Where(job => job.Schedules != null && job.Schedules.Length > 0)
-                .Where(job => job.Schedules.Min(s => SchedulerHelper.GetNextRun(s.Start, s.Interval, lastRun) <= now))
+            var jobsSettingsToRun = JobSettings.Where(jobSetting => jobSetting.Schedules != null && jobSetting.Schedules.Length > 0)
+                .Where(jobSetting => jobSetting.Schedules.Min(s => SchedulerHelper.GetNextRun(s.Start, s.Interval, jobs[jobSetting.Id].LastRun.HasValue ? jobs[jobSetting.Id].LastRun.Value : DateTime.MinValue) <= now))
                 .ToList();
 
             // is job currently running?
@@ -50,16 +47,18 @@ namespace Mur
                 
                 var task = new Task(job.Run).ContinueWith((result) =>
                 {
-                    UpdateLastRun(jobSetting, lastRun);
+                    UpdateLastRun(job, now);
                 });
 
                 task.Start();
             }
         }
 
-        private void UpdateLastRun(JobSettings job, DateTime lastRun)
+        private void UpdateLastRun(JobBase job, DateTime lastRun)
         {
-            
+            job.LastRun = lastRun;
+
+            // trigger event for handling storage/messaging/whatever
         }
 
         public void Start(List<JobSettings> jobSettings)
