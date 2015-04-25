@@ -13,6 +13,10 @@ namespace Mur
 
         private List<JobSettings> JobSettings { get; set; }
 
+        public delegate void JobFinishedEventHandler(object sender, JobFinishedEventArgs args);
+
+        public event JobFinishedEventHandler JobFinished;
+
         private void Initialize(List<JobSettings> settings)
         {
             timer = new Timer(60000);
@@ -32,33 +36,34 @@ namespace Mur
         {
             var now = DateTime.Now;
 
-            // find jobr
             var jobsSettingsToRun = JobSettings.Where(jobSetting => jobSetting.Schedules != null && jobSetting.Schedules.Length > 0)
                 .Where(jobSetting => jobSetting.Schedules.Min(s => SchedulerHelper.GetNextRun(s.Start, s.Interval, jobs[jobSetting.Id].LastRun.HasValue ? jobs[jobSetting.Id].LastRun.Value : DateTime.MinValue) <= now))
                 .ToList();
 
-            // is job currently running?
-
-            // and execute jobs
-
+            // TODO: is job currently running? 
             foreach (var jobSetting in jobsSettingsToRun)
             {
                 var job = jobs[jobSetting.Id];
                 
                 var task = new Task(job.Run).ContinueWith((result) =>
                 {
-                    UpdateLastRun(job, now);
+                    UpdateLastRun(jobSetting, job, now);
                 });
 
                 task.Start();
             }
         }
 
-        private void UpdateLastRun(JobBase job, DateTime lastRun)
+        private void UpdateLastRun(JobSettings jobSetting, JobBase job, DateTime lastRun)
         {
             job.LastRun = lastRun;
 
-            // trigger event for handling storage/messaging/whatever
+            // TODO: introduce success/error info
+            var finishedEvent = this.JobFinished;
+            if (finishedEvent != null)
+            {
+                finishedEvent(this, new JobFinishedEventArgs(jobSetting.Id, lastRun));
+            }
         }
 
         public void Start(List<JobSettings> jobSettings)
