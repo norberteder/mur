@@ -45,12 +45,13 @@ namespace Mur
             {
                 var job = jobs[jobSetting.Id];
                 
-                var task = new Task(job.Run).ContinueWith((result) =>
+                Task.Factory.StartNew(() => {
+                    job.Run();
+                })
+                .ContinueWith((result) =>
                 {
                     UpdateLastRun(jobSetting, job, now);
                 });
-
-                task.Start();
             }
         }
 
