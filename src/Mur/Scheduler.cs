@@ -1,6 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using System.Timers;
+using System.Linq;
+
 namespace Mur
 {
     public class Scheduler
@@ -19,14 +22,44 @@ namespace Mur
 
             foreach (var jobSetting in JobSettings)
             {
-                var job = Activator.CreateInstance(Type.GetType(jobSetting.Type)) as JobBase;
+                var jobType = Type.GetType(jobSetting.Type);
+                var job = Activator.CreateInstance(jobType) as JobBase;
                 jobs.Add(jobSetting.Id, job);
             }
         }
 
         private void Tick(object sender, ElapsedEventArgs e)
         {
-            // find and execute jobs
+            var now = DateTime.Now;
+
+            // TODO: find last run handing
+            var lastRun = DateTime.Now;
+
+            // find jobr
+            var jobsSettingsToRun = JobSettings.Where(job => job.Schedules != null && job.Schedules.Length > 0)
+                .Where(job => job.Schedules.Min(s => SchedulerHelper.GetNextRun(s.Start, s.Interval, lastRun) <= now))
+                .ToList();
+
+            // is job currently running?
+
+            // and execute jobs
+
+            foreach (var jobSetting in jobsSettingsToRun)
+            {
+                var job = jobs[jobSetting.Id];
+                
+                var task = new Task(job.Run).ContinueWith((result) =>
+                {
+                    UpdateLastRun(jobSetting, lastRun);
+                });
+
+                task.Start();
+            }
+        }
+
+        private void UpdateLastRun(JobSettings job, DateTime lastRun)
+        {
+            
         }
 
         public void Start(List<JobSettings> jobSettings)
