@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Mur.TestApp
+﻿namespace Mur.TestApp
 {
     public class FibonacciJob : JobBase
     {
@@ -19,8 +13,7 @@ namespace Mur.TestApp
             {
                 return n;
             }
-            else
-                return GetFibonacci(n - 1) + GetFibonacci(n - 2);
+            return GetFibonacci(n - 1) + GetFibonacci(n - 2);
         }
     }
 }
